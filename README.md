@@ -25,3 +25,18 @@ az staticwebapp create \
   --location westeurope \
   --branch main \
   --login-with-github
+
+CHECKLISTA
+[x] Azure Resursgrupp: Skapad och taggad.
+
+[x] RBAC: Hilal är tillagd som Contributor.
+
+[x] Budget/Cost Alert: Uppsatt i Azure.
+
+[x] GitHub: Repo finns, ni båda har åtkomst och koden ligger där.
+
+[x] README.md: Innehåller vem som gjorde vad + ert CLI-skript.
+
+[x] Deployment: Appen skapades via Azure CLI.
+
+[x] Live-länk: Spelet går att spela i webbläsaren via er Azure-länk.
