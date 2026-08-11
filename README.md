@@ -1,4 +1,4 @@
-# Grupparbete: Azure Static Web App & Deployment
+# Grupparbete: Azure Static Web App & Deployment URL: https://blue-dune-09fc34703.7.azurestaticapps.net/
 
 ## Vem gjorde vad?
 
