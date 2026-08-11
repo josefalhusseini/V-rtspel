@@ -9,7 +9,7 @@
 
 * **Hilal**: 
   * Hanterade budget-delen (Cost Alert) i Azure.
-  * Utvecklade spelets originalkod och grundlogik (C# Console App).
+  * Utvecklade spelets originalkod och grundlogik (C# från början, men gjorde om till js för frontenden)
   * Designade spelets mekanik (poängsystem, slumpmässiga spawn-positioner och hastighet).
   * Arbetade med versionshanteringen och pushade originalkoden till GitHub.
 
