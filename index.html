@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot Invaders</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d1117;
+    font-family: 'Courier New', monospace;
+    color: #c9d1d9;
+  }
+  .container {
+    width: 480px;
+    max-width: 92vw;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  h1 {
+    text-align: center;
+    color: #58a6ff;
+    font-size: 1.6rem;
+    margin: 0 0 4px;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #8b949e;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+  }
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    color: #8b949e;
+  }
+  .hud span { color: #58a6ff; font-weight: bold; }
+  .arena {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    background: #010409;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .robot {
+    position: absolute;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f85149;
+    text-shadow: 0 0 12px #f85149aa;
+    user-select: none;
+    animation: pop 0.15s ease-out;
+  }
+  @keyframes pop {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .feedback {
+    text-align: center;
+    min-height: 1.4rem;
+    margin: 12px 0 6px;
+    font-weight: bold;
+  }
+  .feedback.hit { color: #3fb950; }
+  .feedback.miss { color: #f85149; }
+  form {
+    display: flex;
+    gap: 8px;
+  }
+  input {
+    flex: 1;
+    padding: 10px;
+    font-size: 1.1rem;
+    text-align: center;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #c9d1d9;
+    font-family: inherit;
+  }
+  input:focus { outline: none; border-color: #58a6ff; }
+  button {
+    padding: 10px 18px;
+    background: #238636;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #2ea043; }
+  button:disabled { background: #30363d; cursor: not-allowed; }
+  .end-screen {
+    text-align: center;
+  }
+  .end-screen h2 { color: #58a6ff; }
+  .end-screen p { font-size: 1.3rem; }
+  .restart-btn {
+    margin-top: 12px;
+    padding: 10px 22px;
+    background: #1f6feb;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .restart-btn:hover { background: #388bfd; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🤖 ROBOT INVADERS</h1>
+  <p class="subtitle">Skriv rätt tecken innan roboten försvinner</p>
+
+  <div id="game-screen">
+    <div class="hud">
+      <div>Omgång: <span id="turn-count">1</span> / 25</div>
+      <div>Poäng: <span id="score-count">0</span></div>
+    </div>
+
+    <div class="arena" id="arena"></div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <form id="input-form">
+      <input type="text" id="char-input" maxlength="1" autocomplete="off" placeholder="?" autofocus>
+      <button type="submit">Skjut</button>
+    </form>
+  </div>
+
+  <div id="end-screen" class="end-screen hidden">
+    <h2>Spelet slut!</h2>
+    <p>Du fick <span id="final-score">0</span> / 25 poäng</p>
+    <button class="restart-btn" id="restart-btn">Spela igen</button>
+  </div>
+</div>
+
+<script>
+  const TOTAL_TURNS = 25;
+  const arena = document.getElementById('arena');
+  const turnCountEl = document.getElementById('turn-count');
+  const scoreCountEl = document.getElementById('score-count');
+  const feedbackEl = document.getElementById('feedback');
+  const inputForm = document.getElementById('input-form');
+  const charInput = document.getElementById('char-input');
+  const gameScreen = document.getElementById('game-screen');
+  const endScreen = document.getElementById('end-screen');
+  const finalScoreEl = document.getElementById('final-score');
+  const restartBtn = document.getElementById('restart-btn');
+
+  let turn = 0;
+  let score = 0;
+  let currentSymbol = '';
+  let robotEl = null;
+  let waitingForInput = false;
+
+  function randomInt(min, maxExclusive) {
+    return Math.floor(Math.random() * (maxExclusive - min)) + min;
+  }
+
+  function randomSymbol() {
+    // Matches the C# range: chars 33-86 (!, ", #, ... V)
+    return String.fromCharCode(randomInt(33, 87));
+  }
+
+  function spawnRobot() {
+    if (robotEl) robotEl.remove();
+
+    currentSymbol = randomSymbol();
+    robotEl = document.createElement('div');
+    robotEl.className = 'robot';
+    robotEl.textContent = currentSymbol;
+
+    const arenaW = arena.clientWidth - 40;
+    const arenaH = arena.clientHeight - 40;
+    const x = randomInt(0, arenaW);
+    const y = randomInt(0, arenaH);
+    robotEl.style.left = x + 'px';
+    robotEl.style.top = y + 'px';
+
+    arena.appendChild(robotEl);
+    waitingForInput = true;
+    charInput.value = '';
+    charInput.focus();
+  }
+
+  function nextTurn() {
+    turn++;
+    if (turn > TOTAL_TURNS) {
+      endGame();
+      return;
+    }
+    turnCountEl.textContent = turn;
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'feedback';
+
+    // Random delay before the robot appears, like Thread.Sleep(200-500) in the original
+    const delay = randomInt(200, 500);
+    setTimeout(spawnRobot, delay);
+  }
+
+  function endGame() {
+    gameScreen.classList.add('hidden');
+    endScreen.classList.remove('hidden');
+    finalScoreEl.textContent = score;
+  }
+
+  inputForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!waitingForInput) return;
+    waitingForInput = false;
+
+    const input = charInput.value;
+    if (input && input[0] === currentSymbol) {
+      score++;
+      feedbackEl.textContent = 'Träff!';
+      feedbackEl.className = 'feedback hit';
+    } else {
+      feedbackEl.textContent = 'Missad';
+      feedbackEl.className = 'feedback miss';
+    }
+    scoreCountEl.textContent = score;
+
+    if (robotEl) { robotEl.remove(); robotEl = null; }
+    setTimeout(nextTurn, 500);
+  });
+
+  restartBtn.addEventListener('click', () => {
+    turn = 0;
+    score = 0;
+    scoreCountEl.textContent = 0;
+    gameScreen.classList.remove('hidden');
+    endScreen.classList.add('hidden');
+    nextTurn();
+  });
+
+  // Start the game
+  nextTurn();
+</script>
+
+</body>
+</html>
