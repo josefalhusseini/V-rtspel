@@ -12,3 +12,16 @@
   * Utvecklade spelets originalkod och grundlogik (C# Console App).
   * Designade spelets mekanik (poängsystem, slumpmässiga spawn-positioner och hastighet).
   * Arbetade med versionshanteringen och pushade originalkoden till GitHub.
+
+## Deployment
+
+Applikationen deployades till Azure Static Web Apps via Azure CLI med följande kommando:
+
+```bash
+az staticwebapp create \
+  --name V-rtspelApp \
+  --resource-group RG-Josef-Al-Husseini-e0aa81-DotNetCloudDeveloper-VT-Mars-Goteborg \
+  --source [https://github.com/josefalhusseini/V-rtspel](https://github.com/josefalhusseini/V-rtspel) \
+  --location westeurope \
+  --branch main \
+  --login-with-github
